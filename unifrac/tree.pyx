@@ -1,9 +1,11 @@
-from libcpp cimport vector
+#cython: language_level=3, infer_types=True
+
+
+from itertools import chain
 
 import dendropy
 
-
-def decompose(dendropy.Tree tree):
+def decompose(tree):
     """
     >>> tree = dendropy.Tree.get(
     ...     data='((A:2, B:3):1, C:4);',
