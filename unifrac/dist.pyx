@@ -11,7 +11,7 @@ from libc.math cimport log2, fabs
 
 cpdef dict combine(tuple index, dict sample):
     names, lengths, decomposed = index
-    cdef list components = [decomposed[names[name]] for name in sample]
+    cdef list components = [decomposed[names[n]] for n in sample]
     cdef list counts = list(sample.values())
     cdef dict combination = {}
     cdef list component
@@ -26,7 +26,7 @@ cpdef dict combine(tuple index, dict sample):
 
 cpdef set bincombine(tuple index, dict sample):
     names, lengths, decomposed = index
-    cdef list components = [decomposed[names[name]] for name in sample]
+    cdef list components = [decomposed[names[n]] for n in sample]
     return set(chain.from_iterable(components))
 
 
@@ -34,7 +34,7 @@ cdef inline np.float64_t infdif(np.float64_t x, np.float64_t y) nogil:
     return fabs((log2(x) if x else 0) - (log2(y) if y else 0))
 
 
-cpdef float infunifrac(index: tuple, a: dict, b: dict):
+def infunifrac(index: tuple, a: dict, b: dict):
     cdef list lengths = index[1]
     cdef np.float64_t total_length = sum(lengths)
     cdef dict a_ = combine(index, a)
@@ -54,7 +54,7 @@ cpdef float infunifrac(index: tuple, a: dict, b: dict):
     return dist
 
 
-cpdef float wunifrac(index: tuple, a: dict, b: dict):
+def wunifrac(index: tuple, a: dict, b: dict):
     cdef list lengths = index[1]
     cdef np.float64_t total_length = sum(lengths)
     cdef dict a_ = combine(index, a)
@@ -68,13 +68,13 @@ cpdef float wunifrac(index: tuple, a: dict, b: dict):
     for edge in edges:
         l = lengths[edge]
         dist += (l / total_length) * fabs(
-            a_[edge]/sum_a if edge in a_ else 0 -
-            b_[edge]/sum_b if edge in b_ else 0
+            (a_[edge]/sum_a if edge in a_ else 0) -
+            (b_[edge]/sum_b if edge in b_ else 0)
         )
     return dist
 
 
-cpdef float uwunifrac(index: tuple, a: dict, b: dict):
+def uwunifrac(index: tuple, a: dict, b: dict):
     cdef list lengths = index[1]
     cdef np.float64_t total_length = sum(lengths)
     cdef set a_ = bincombine(index, a)
