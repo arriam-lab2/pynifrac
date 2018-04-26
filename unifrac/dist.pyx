@@ -80,8 +80,8 @@ def uwunifrac(index: tuple, a: dict, b: dict):
     cdef set a_ = bincombine(index, a)
     cdef set b_ = bincombine(index, b)
     cdef set setdiff = (a_ - b_) | (b_ - a_)
-    cdef np.float64_t shared_length = 0
+    cdef np.float64_t diflength = 0
     cdef int edge
     for edge in setdiff:
-        shared_length += lengths[edge]
-    return shared_length / total_length
+        diflength += lengths[edge]
+    return diflength / total_length
