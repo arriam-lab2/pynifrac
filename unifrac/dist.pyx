@@ -31,20 +31,21 @@ cpdef set bincombine(tuple index, dict sample):
 
 
 cdef inline np.float64_t infdif(np.float64_t x, np.float64_t y) nogil:
-    return fabs((log2(x) if x else 0) - (log2(y) if y else 0))
+    return fabs(x * (log2(x) if x else 0) - y * (log2(y) if y else 0))
 
 
 def infunifrac(index: tuple, a: dict, b: dict):
     cdef list lengths = index[1]
     cdef np.float64_t total_length = sum(lengths)
     cdef dict a_ = combine(index, a)
-    cdef int sum_a = sum(a_.values())
+    cdef int sum_a = sum(a.values())
     cdef dict b_ = combine(index, b)
-    cdef int sum_b = sum(b_.values())
+    cdef int sum_b = sum(b.values())
     cdef set edges = set(a_) | set(b_)
     cdef np.float64_t dist = 0
     cdef int edge
     cdef np.float64_t l
+
     for edge in edges:
         l = lengths[edge]
         dist += (l / total_length) * infdif(
@@ -58,9 +59,9 @@ def wunifrac(index: tuple, a: dict, b: dict):
     cdef list lengths = index[1]
     cdef np.float64_t total_length = sum(lengths)
     cdef dict a_ = combine(index, a)
-    cdef int sum_a = sum(a_.values())
+    cdef int sum_a = sum(a.values())
     cdef dict b_ = combine(index, b)
-    cdef int sum_b = sum(b_.values())
+    cdef int sum_b = sum(b.values())
     cdef set edges = set(a_) | set(b_)
     cdef np.float64_t dist = 0
     cdef int edge
