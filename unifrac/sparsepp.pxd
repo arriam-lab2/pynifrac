@@ -1,4 +1,5 @@
 from libcpp.pair cimport pair
+from numpy cimport uint64_t
 
 
 cdef extern from "sparsepp/spp.h" namespace "spp":
@@ -12,3 +13,4 @@ cdef extern from "sparsepp/spp.h" namespace "spp":
         B& operator[](const A& key)
         iterator begin()
         iterator end()
+        uint64_t size() const

@@ -7,16 +7,16 @@ from libcpp.vector cimport vector
 from libcpp.string cimport string
 cimport numpy as np
 from numpy cimport int64_t, float64_t, uint32_t, uint64_t
+from sparsepp cimport sparse_hash_map
 
 
 cdef class TreeIndex:
     cdef:
-        dict leafcodes
+        sparse_hash_map[string, uint64_t] leafcodes
         vector[float64_t] lengths
         vector[vector[uint32_t]] decompositions
 
     def __init__(self, tree: TreeNode):
-        self.leafcodes = {}
         self.decompose(tree)
 
     @property
@@ -38,18 +38,20 @@ cdef class TreeIndex:
 
     @property
     def leaves(self):
-        return self.leafcodes
+        retval = {}
+        for item in self.leafcodes:
+            retval[item.first] = item.second
+        return retval
 
     cdef void decompose(self, tree):
         cdef:
-            list names = []
             vector[uint32_t] trace
             set visited = set()
             uint32_t nleaves = len(list(tree.tips()))
         node = tree
-        while len(names) != nleaves:
+        while self.leafcodes.size() != nleaves:
             if node.is_tip():
-                names.append(node.name)
+                self.leafcodes[node.name.encode('utf8')] = self.leafcodes.size()
                 self.decompositions.push_back(trace)
             child = next((n for n in node.children if n not in visited), None)
             if child is None:
@@ -60,4 +62,3 @@ cdef class TreeIndex:
                 self.lengths.push_back(child.length or 0)
                 visited.add(child)
                 node = child
-        self.leafcodes = {name: i for i, name in enumerate(names)}
