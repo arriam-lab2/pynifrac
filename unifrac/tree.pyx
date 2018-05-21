@@ -45,13 +45,16 @@ cdef class TreeIndex:
 
     cdef void decompose(self, tree):
         cdef:
+            vector[string] names
             vector[uint32_t] trace
             set visited = set()
             uint32_t nleaves = len(list(tree.tips()))
         node = tree
-        while self.leafcodes.size() != nleaves:
+        # while self.leafcodes.size() != nleaves:
+        while names.size() != nleaves:
             if node.is_tip():
-                self.leafcodes[node.name.encode('utf8')] = self.leafcodes.size()
+                # self.leafcodes[node.name.encode('utf8')] = self.leafcodes.size()
+                names.push_back(node.name.encode('utf8'))
                 self.decompositions.push_back(trace)
             child = next((n for n in node.children if n not in visited), None)
             if child is None:
@@ -62,3 +65,7 @@ cdef class TreeIndex:
                 self.lengths.push_back(child.length or 0)
                 visited.add(child)
                 node = child
+        self.leafcodes.reserve(names.size())
+        cdef uint64_t i = 0
+        for i in range(names.size()):
+            self.leafcodes[names[i]] = i

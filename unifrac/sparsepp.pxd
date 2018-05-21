@@ -10,7 +10,8 @@ cdef extern from "sparsepp/spp.h" namespace "spp":
             bint operator==(iterator)
             bint operator!=(iterator)
         sparse_hash_map()
+        void reserve(uint64_t cnt)
+        uint64_t size() const
         B& operator[](const A& key)
         iterator begin()
         iterator end()
-        uint64_t size() const
