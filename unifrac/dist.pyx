@@ -1,88 +1,53 @@
-#cython: language_level=3, infer_types=True
+#cython: language_level=3, infer_types=True, c_string_type=unicode, c_string_encoding=utf8
 
-
-from itertools import chain
 
 import numpy as np
+
 cimport numpy as np
-
+from numpy cimport uint32_t, float64_t
 from libc.math cimport log2, fabs
-
-
-cpdef dict combine(tuple index, dict sample):
-    names, lengths, decomposed = index
-    cdef list components = [decomposed[names[n]] for n in sample]
-    cdef list counts = list(sample.values())
-    cdef dict combination = {}
-    cdef list component
-    cdef int count
-    cdef int edge
-    for component, count in zip(components, counts):
-        for edge in component:
-            combination.setdefault(edge, 0)
-            combination[edge] += count
-    return combination
-
-
-cpdef set bincombine(tuple index, dict sample):
-    names, lengths, decomposed = index
-    cdef list components = [decomposed[names[n]] for n in sample]
-    return set(chain.from_iterable(components))
+from libcpp.vector cimport vector
+from unifrac.indexing cimport TreeIndex, SampleIndex, branchid_t, branchlen_t
 
 
 cdef inline np.float64_t infdif(np.float64_t x, np.float64_t y) nogil:
     return fabs(x * (log2(x) if x else 0) - y * (log2(y) if y else 0))
 
 
-def infunifrac(index: tuple, a: dict, b: dict):
-    cdef list lengths = index[1]
-    cdef np.float64_t total_length = sum(lengths)
-    cdef dict a_ = combine(index, a)
-    cdef int sum_a = sum(a.values())
-    cdef dict b_ = combine(index, b)
-    cdef int sum_b = sum(b.values())
-    cdef set edges = set(a_) | set(b_)
-    cdef np.float64_t dist = 0
-    cdef int edge
-    cdef np.float64_t l
-
-    for edge in edges:
-        l = lengths[edge]
-        dist += (l / total_length) * infdif(
-            a_[edge]/sum_a if edge in a_ else 0,
-            b_[edge]/sum_b if edge in b_ else 0
-        )
-    return dist
+cpdef float64_t infunifrac(TreeIndex index, SampleIndex a , SampleIndex b):
+    cdef:
+        float64_t numerator = 0
+        vector[branchid_t] branches
+    with nogil:
+        branches = a.branch_union(b)
+        for branch in branches:
+            # TODO optimise the sum
+            numerator += (
+                index.lengths[branch] * infdif(a.fraction(branch), b.fraction(branch))
+            )
+        return numerator / index.lensum
 
 
-def wunifrac(index: tuple, a: dict, b: dict):
-    cdef list lengths = index[1]
-    cdef np.float64_t total_length = sum(lengths)
-    cdef dict a_ = combine(index, a)
-    cdef int sum_a = sum(a.values())
-    cdef dict b_ = combine(index, b)
-    cdef int sum_b = sum(b.values())
-    cdef set edges = set(a_) | set(b_)
-    cdef np.float64_t dist = 0
-    cdef int edge
-    cdef np.float64_t l
-    for edge in edges:
-        l = lengths[edge]
-        dist += (l / total_length) * fabs(
-            (a_[edge]/sum_a if edge in a_ else 0) -
-            (b_[edge]/sum_b if edge in b_ else 0)
-        )
-    return dist
+cpdef float64_t wunifrac(TreeIndex index, SampleIndex a , SampleIndex b):
+    cdef:
+        float64_t numerator = 0
+        vector[branchid_t] branches
+    with nogil:
+        branches = a.branch_union(b)
+        for branch in branches:
+            # TODO optimise the sum
+            numerator += (
+                index.lengths[branch] * fabs(a.fraction(branch) - b.fraction(branch))
+            )
+        return numerator / index.lensum
 
 
-def uwunifrac(index: tuple, a: dict, b: dict):
-    cdef list lengths = index[1]
-    cdef np.float64_t total_length = sum(lengths)
-    cdef set a_ = bincombine(index, a)
-    cdef set b_ = bincombine(index, b)
-    cdef set setdiff = (a_ - b_) | (b_ - a_)
-    cdef np.float64_t diflength = 0
-    cdef int edge
-    for edge in setdiff:
-        diflength += lengths[edge]
-    return diflength / total_length
+cpdef float64_t uwunifrac(TreeIndex index, SampleIndex a , SampleIndex b):
+    cdef:
+        float64_t difflen = 0
+        vector[branchid_t] branches
+    with nogil:
+        branches = a.branch_symdiff(b)
+        for branchid in branches:
+            difflen += index.lengths[branchid]
+        return difflen / index.lensum
